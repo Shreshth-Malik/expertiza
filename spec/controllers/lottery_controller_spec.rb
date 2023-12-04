@@ -19,6 +19,15 @@ describe LotteryController do
   let(:assignment_team3) { create(:assignment_team, parent_id: assignment.id) }
   let(:assignment_team4) { create(:assignment_team, parent_id: assignment.id) }
 
+  let(:assignment_team01) { create(:assignment_team, parent_id: assignment.id) }
+  let(:assignment_team02) { create(:assignment_team, parent_id: nil) }
+  let(:assignment_team03) { create(:assignment_team, parent_id: nil) }
+  let(:assignment_team04) { create(:assignment_team, parent_id: nil) }
+
+  let(:assignment_team_x) { create(:assignment_team, parent_id: 01) }
+  let(:assignment_team_y) { create(:assignment_team, parent_id: 02) }
+  let(:assignment_team_z) { create(:assignment_team, parent_id: 03) }
+
   let(:team_user1) { create(:team_user, team_id: assignment_team1.id, user_id: student1.id, id: 1) }
   let(:team_user2) { create(:team_user, team_id: assignment_team1.id, user_id: student2.id, id: 2) }
   let(:team_user3) { create(:team_user, team_id: assignment_team1.id, user_id: student3.id, id: 3) }
@@ -31,7 +40,15 @@ describe LotteryController do
     assignment_team2.save
     assignment_team3.save
     assignment_team4.save
-
+    
+    assignment_team01.save
+    assignment_team02.save
+    assignment_team03.save
+    assignment_team04.save
+    assignment_team_x.save
+    assignment_team_y.save
+    assignment_team_z.save
+    
     team_user1.save
     team_user2.save
     team_user3.save
@@ -88,12 +105,12 @@ describe LotteryController do
     it 'create new Assignment Teams' do
       user_bidding_info = []
       teams = [[student1.id, student2.id], [student3.id]]
-      expect(AssignmentTeam.count).to eq(4)
+      expect(AssignmentTeam.count).to eq(11)
       expect(TeamNode.count).to eq(0)
       expect(TeamsUser.count).to eq(6)
       expect(TeamUserNode.count).to eq(0)
       controller.send(:create_new_teams_for_bidding_response, teams, assignment, user_bidding_info)
-      expect(AssignmentTeam.count).to eq(6)
+      expect(AssignmentTeam.count).to eq(13)
       expect(TeamNode.count).to eq(2)
       expect(TeamsUser.count).to eq(6)
       expect(TeamUserNode.count).to eq(3)
@@ -222,5 +239,26 @@ describe LotteryController do
       expect(percentages[2].nan?).to be true if expected_percentages[2].nan?
       expect(percentages[3].nan?).to be true if expected_percentages[3].nan?
     end
+
+    it 'only assign one team to get what they want if all teams bidding for the same topic' do
+      controller.bidding_table_for_each_topic
+
+      # Check if the desired team got the topic
+      expect(assignment_team01.parent_id).to eq(assignment.id)
+      
+      # Check if the other teams did not get any topic
+      expect(assignment_team02.parent_id).to be_nil
+      expect(assignment_team03.parent_id).to be_nil
+      expect(assignment_team04.parent_id).to be_nil
+    end
+   
+    it 'makes all team get their first bid when each team bid differently' do
+      controller.bidding_table_for_each_topic
+
+      expect(assignment_team_x.parent_id).not_to eq(assignment_team_y.parent_id)
+      expect(assignment_team_x.parent_id).not_to eq(assignment_team_z.parent_id)
+      expect(assignment_team_y.parent_id).not_to eq(assignment_team_z.parent_id)
+    end    
+
   end
 end
